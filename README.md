@@ -1,13 +1,17 @@
 # Elevator Simulation
 
-This project simulates a elevator system using Java.
+This project simulates an elevator system using Java.
+
+## Low-Level-Design
+
+![Elevator LLD](docs/ElevatorSimulationLLD.png)
 
 ## How to Run with Docker
 
 Make sure you have [Docker](https://www.docker.com/products/docker-desktop) installed. 
 ### 1. Build the Docker Image
 
-```bash 
+```bash
 docker build -t elevator .
 ```
 
