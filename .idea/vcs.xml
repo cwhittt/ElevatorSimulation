@@ -2,7 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/ElevatorSim" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/ElevatorSimulation" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ElevatorSImulation" vcs="Git" />
   </component>
 </project>

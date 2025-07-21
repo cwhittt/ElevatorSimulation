@@ -25,7 +25,7 @@ public class ElevatorScheduler {
             return;
         }
         
-        // Assign external request to best elevator if possible
+        // Assign external request to the best elevator if possible
         Elevator bestElevator = null;
         int bestDistance = Integer.MAX_VALUE;
 

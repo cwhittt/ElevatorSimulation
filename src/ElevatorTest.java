@@ -8,12 +8,12 @@ public class ElevatorTest {
     public static void main(String[] args) {
         System.out.println("Starting Elevator Simulation Tests...\n");
         
-        // Test Request classes
+        // Test Request
         testExternalRequest();
         testInternalRequest();
         testRequestValidation();
         
-        // Test Elevator functionality
+        // Test Elevator
         testElevatorCreation();
         testElevatorRequestHandling();
         testElevatorStateTransitions();

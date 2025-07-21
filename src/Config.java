@@ -14,12 +14,12 @@ public class Config {
         }
     }
 
-    private static boolean getBoolean(String key, boolean defaultValue) {
-        String value = System.getProperty(key);
+    private static boolean getBoolean() {
+        String value = System.getProperty("VERBOSE_LOGGING");
         if (value == null) {
-            value = System.getenv(key);
+            value = System.getenv("VERBOSE_LOGGING");
         }
-        if (value == null) return defaultValue;
+        if (value == null) return true;
         return Boolean.parseBoolean(value);
     }
 
@@ -31,5 +31,5 @@ public class Config {
     public static int getInternalRequestChancePercent() { return getInt("INTERNAL_REQUEST_CHANCE_PERCENT", 20); }
     public static int getInternalRequestMinCount() { return getInt("INTERNAL_REQUEST_MIN_COUNT", 1); }
     public static int getInternalRequestMaxCount() { return getInt("INTERNAL_REQUEST_MAX_COUNT", 2); }
-    public static boolean getVerboseLogging() { return getBoolean("VERBOSE_LOGGING", true); }
+    public static boolean getVerboseLogging() { return getBoolean(); }
 } 

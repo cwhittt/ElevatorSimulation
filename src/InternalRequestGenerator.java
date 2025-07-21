@@ -1,8 +1,6 @@
 public class InternalRequestGenerator extends RequestGenerator {
 
-    public InternalRequestGenerator() {
-        // No fields to initialize
-    }
+    public InternalRequestGenerator() {}
 
     @Override
     public InternalRequest generateRequest() {

@@ -182,8 +182,6 @@ public class Elevator implements Runnable {
                 || state == ElevatorState.IDLE;
     }
 
-    // Getters for summary
-
     public int getId() {
         return id;
     }

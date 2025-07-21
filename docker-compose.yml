@@ -35,7 +35,7 @@ services:
     profiles:
       - scaled
 
-  # speed sim
+  # Burj sim
   elevator-sim-burj:
     build: .
     environment:
@@ -44,7 +44,7 @@ services:
       - NUM_REQUESTS=100
       - EXTERNAL_REQUEST_INTERVAL_MS=25
       - ELEVATOR_MOVE_INTERVAL_MS=5
-      - INTERNAL_REQUEST_CHANCE_PERCENT=25
+      - INTERNAL_REQUEST_CHANCE_PERCENT=25 #for quick ending simulations
       - INTERNAL_REQUEST_MIN_COUNT=1
       - INTERNAL_REQUEST_MAX_COUNT=3
       - VERBOSE_LOGGING=false
