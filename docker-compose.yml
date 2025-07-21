@@ -1,0 +1,63 @@
+services:
+  # Basic sim
+  elevator-sim-basic:
+    build: .
+    environment:
+      - TOTAL_FLOORS=50
+      - NUM_ELEVATORS=2
+      - NUM_REQUESTS=10
+      - EXTERNAL_REQUEST_INTERVAL_MS=500
+      - ELEVATOR_MOVE_INTERVAL_MS=100
+      - INTERNAL_REQUEST_CHANCE_PERCENT=20 #for quick ending simulations
+      - INTERNAL_REQUEST_MIN_COUNT=1
+      - INTERNAL_REQUEST_MAX_COUNT=2
+      - VERBOSE_LOGGING=true
+    volumes:
+      - ./logs:/app/logs
+    profiles:
+      - basic
+
+  # Scaled sim
+  elevator-sim-scaled:
+    build: .
+    environment:
+      - TOTAL_FLOORS=100
+      - NUM_ELEVATORS=4
+      - NUM_REQUESTS=50
+      - EXTERNAL_REQUEST_INTERVAL_MS=500
+      - ELEVATOR_MOVE_INTERVAL_MS=100
+      - INTERNAL_REQUEST_CHANCE_PERCENT=25 #for quick ending simulations
+      - INTERNAL_REQUEST_MIN_COUNT=1
+      - INTERNAL_REQUEST_MAX_COUNT=3
+      - VERBOSE_LOGGING=true
+    volumes:
+      - ./logs:/app/logs
+    profiles:
+      - scaled
+
+  # speed sim
+  elevator-sim-burj:
+    build: .
+    environment:
+      - TOTAL_FLOORS=163
+      - NUM_ELEVATORS=8
+      - NUM_REQUESTS=100
+      - EXTERNAL_REQUEST_INTERVAL_MS=25
+      - ELEVATOR_MOVE_INTERVAL_MS=5
+      - INTERNAL_REQUEST_CHANCE_PERCENT=25
+      - INTERNAL_REQUEST_MIN_COUNT=1
+      - INTERNAL_REQUEST_MAX_COUNT=3
+      - VERBOSE_LOGGING=false
+    volumes:
+      - ./logs:/app/logs
+    profiles:
+      - burj
+
+  # Test profile
+  elevator-test:
+    build: .
+    command: ["sh", "-c", "javac src/*.java && java -cp src ElevatorTest"]
+    volumes:
+      - ./src:/app/src
+    profiles:
+      - test

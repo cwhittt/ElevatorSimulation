@@ -1,15 +1,15 @@
 public class InternalRequestGenerator extends RequestGenerator {
 
-    public InternalRequestGenerator(int totalFloors) {
-        super(totalFloors);
+    public InternalRequestGenerator() {
+        // No fields to initialize
     }
 
     @Override
     public InternalRequest generateRequest() {
-        int source = random.nextInt(totalFloors);
+        int source = 1 + random.nextInt(Config.getTotalFloors());
         int destination;
         do {
-            destination = random.nextInt(totalFloors);
+            destination = 1 + random.nextInt(Config.getTotalFloors());
         } while (destination == source); // Avoid the same floor
 
         return new InternalRequest(source, destination);

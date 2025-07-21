@@ -1,60 +1,87 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
-public class ElevatorScheduler implements Runnable {
+public class ElevatorScheduler {
     private final List<Elevator> elevators;
-    private final Set<ExternalRequest> externalUpRequests =
-            Collections.synchronizedSet(new TreeSet<>(Comparator.comparingInt(Request::getSourceFloor)));
-    private final Set<ExternalRequest> externalDownRequests =
-            Collections.synchronizedSet(new TreeSet<>((r1, r2) -> Integer.compare(r2.getSourceFloor(), r1.getSourceFloor())));
+    private final List<Thread> elevatorThreads = new ArrayList<>();
+    private final Random random = new Random();
 
-    public ElevatorScheduler(int numberOfElevators) {
-        this.elevators = new ArrayList<>();
-        for (int i = 0; i < numberOfElevators; i++) {
-            Elevator elevator = new Elevator(i);
+    public ElevatorScheduler() {
+        int numElevators = Config.getNumElevators();
+        elevators = new ArrayList<>();
+        for (int i = 0; i < numElevators; i++) {
+            Elevator elevator = new Elevator(i + 1);
             elevators.add(elevator);
-            new Thread(elevator).start(); // start elevator thread
+            Thread t = new Thread(elevator);
+            t.start();
+            elevatorThreads.add(t);
         }
     }
 
     public void addExternalRequest(ExternalRequest request) {
-        if (request.getDirection() == RequestDirection.UP) {
-            externalUpRequests.add(request);
-        } else {
-            externalDownRequests.add(request);
+        if (request == null) {
+            System.err.println("Warning: Attempted to add null external request");
+            return;
         }
-    }
+        
+        // Assign external request to best elevator if possible
+        Elevator bestElevator = null;
+        int bestDistance = Integer.MAX_VALUE;
 
-    @Override
-    public void run() {
-        while (true) {
-            assignRequests();
-            try {
-                Thread.sleep(500); // Adjust polling frequency
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-        }
-    }
-
-    private void assignRequests() {
-        synchronized (externalUpRequests) {
-            externalUpRequests.removeIf(this::assignToElevator);
-        }
-
-        synchronized (externalDownRequests) {
-            externalDownRequests.removeIf(this::assignToElevator);
-        }
-    }
-
-    private boolean assignToElevator(ExternalRequest request) {
         for (Elevator elevator : elevators) {
             if (elevator.canAcceptRequest(request)) {
-                elevator.addInternalRequest(new InternalRequest(elevator.getCurrentFloor(), request.getSourceFloor()));
-                return true;
+                int distance = Math.abs(elevator.getCurrentFloor() - request.getSourceFloor());
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestElevator = elevator;
+                }
             }
         }
-        return false; // No match found
+
+        if (bestElevator != null) {
+            try {
+                bestElevator.addInternalRequest(new InternalRequest(request.getSourceFloor(), getRandomFloor(request.getSourceFloor())));
+            } catch (IllegalArgumentException e) {
+                System.err.println("Warning: Failed to create internal request: " + e.getMessage());
+            }
+        } else {
+            // Fallback: assign to a random elevator
+            Elevator fallback = elevators.get(random.nextInt(elevators.size()));
+            try {
+                fallback.addInternalRequest(new InternalRequest(request.getSourceFloor(), getRandomFloor(request.getSourceFloor())));
+            } catch (IllegalArgumentException e) {
+                System.err.println("Warning: Failed to create internal request: " + e.getMessage());
+            }
+        }
+    }
+
+    private int getRandomFloor(int exclude) {
+        if (exclude < 1) {
+            throw new IllegalArgumentException("Exclude floor must be at least 1, got: " + exclude);
+        }
+        
+        int floor;
+        do {
+            floor = 1 + random.nextInt(Config.getTotalFloors());
+        } while (floor == exclude);
+        return floor;
+    }
+
+    public void shutdownAll() {
+        for (Elevator elevator : elevators) {
+            elevator.shutdown();
+        }
+
+        for (Thread thread : elevatorThreads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        System.out.println("Simulation complete. All elevators stopped.");
     }
 
     public List<Elevator> getElevators() {

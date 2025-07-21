@@ -1,25 +1,25 @@
 public class ExternalRequestGenerator extends RequestGenerator {
 
-    public ExternalRequestGenerator(int totalFloors) {
-        super(totalFloors);
+    public ExternalRequestGenerator() {
+        // No fields to initialize
     }
 
     @Override
     public ExternalRequest generateRequest() {
-        int sourceFloor = random.nextInt(totalFloors);
+        int sourceFloor = 1 + random.nextInt(Config.getTotalFloors());
 
-        double floorPercent = (double) sourceFloor / totalFloors;
+        double floorPercent = (double) sourceFloor / Config.getTotalFloors();
         RequestDirection direction;
 
-        if (sourceFloor == 0) {
-            direction = RequestDirection.UP; // No DOWN from floor 0
-        } else if (sourceFloor == totalFloors - 1) {
-            direction = RequestDirection.DOWN; // No UP from top
+        if (sourceFloor == 1) {
+            direction = RequestDirection.UP; // No DOWN from floor 1
+        } else if (sourceFloor == Config.getTotalFloors()) {
+            direction = RequestDirection.DOWN; // No UP from top floor
         } else {
             direction = random.nextDouble() < (1 - floorPercent) ? RequestDirection.UP : RequestDirection.DOWN;
         }
 
-        return new ExternalRequest(sourceFloor,direction);
+        return new ExternalRequest(sourceFloor, direction);
     }
 
     public InternalRequest generateRequestFromExternal(ExternalRequest externalRequest) {
@@ -28,16 +28,18 @@ public class ExternalRequestGenerator extends RequestGenerator {
         int destinationFloor;
 
         if (direction == RequestDirection.UP) {
-            destinationFloor = sourceFloor + 1 + random.nextInt(totalFloors - sourceFloor - 1);
+            int maxFloor = Math.min(Config.getTotalFloors(), sourceFloor + 1 + random.nextInt(Config.getTotalFloors() - sourceFloor));
+            destinationFloor = Math.max(sourceFloor + 1, maxFloor);
         } else {
-            // For down requests:
             if (random.nextDouble() < 0.75) {
-                // 70% chance to go to floor 1
                 destinationFloor = 1;
             } else {
-                // 30% chance to go to a random floor below sourceFloor (excluding floor 0)
-                destinationFloor = 1 + random.nextInt(sourceFloor - 1);
+                destinationFloor = 1 + random.nextInt(Math.max(1, sourceFloor - 2));
             }
+        }
+
+        if (destinationFloor == sourceFloor) {
+            destinationFloor = direction == RequestDirection.UP ? sourceFloor + 1 : sourceFloor - 1;
         }
 
         return new InternalRequest(sourceFloor, destinationFloor);

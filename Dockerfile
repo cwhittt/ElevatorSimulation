@@ -1,14 +1,18 @@
-# Use official OpenJDK image
+# Use OpenJDK base image
 FROM openjdk:24
 
 # Set working directory
 WORKDIR /app
 
-# Copy Java source files into the container
-COPY src/ .
+# Copy source files
+COPY src/ /app/src/
 
-# Compile the Java files
-RUN javac Main.java Elevator.java
+# Compile all Java files (including tests)
+RUN cd /app && \
+    javac src/*.java && \
+    cd src && \
+    jar cfe ../ElevatorSim.jar Main *.class && \
+    cd ..
 
-# Run the main class
-CMD ["java", "Main"]
+# Default command runs the simulation
+CMD ["java", "-jar", "/app/ElevatorSim.jar"]

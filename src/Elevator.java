@@ -1,33 +1,40 @@
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Elevator implements Runnable {
     private final int id;
     private ElevatorState state;
     private int currentFloor;
+    private boolean running = true;
 
     private final TreeSet<InternalRequest> upRequests;
     private final TreeSet<InternalRequest> downRequests;
+    private final Random random = new Random();
+
+    // Track all internal requests assigned to this elevator (thread-safe)
+    private final List<InternalRequest> allInternalRequests = new CopyOnWriteArrayList<>();
 
     public Elevator(int id) {
         this.id = id;
         this.state = ElevatorState.IDLE;
-        this.currentFloor = 1; // assuming they all start at the first floor
+        this.currentFloor = 1;
 
         this.upRequests = new TreeSet<>(Comparator.comparingInt(InternalRequest::getDestinationFloor));
-        this.downRequests = new TreeSet<>(
-                (r1, r2) -> Integer.compare(r2.getDestinationFloor(), r1.getDestinationFloor()));
+        this.downRequests = new TreeSet<>((r1, r2) -> Integer.compare(r2.getDestinationFloor(), r1.getDestinationFloor()));
     }
 
     @Override
     public void run() {
-        while (true) {
+        while (running) {
             InternalRequest nextRequest;
 
             synchronized (this) {
-                while ((nextRequest = getNextRequest()) == null) {
+                nextRequest = getNextRequest();
+                if (nextRequest == null) {
+                    state = ElevatorState.IDLE;
                     try {
-                        state = ElevatorState.IDLE;
-                        wait(); // Wait for new requests
+                        wait(Config.getExternalRequestIntervalMs());
+                        continue;
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         return;
@@ -36,28 +43,73 @@ public class Elevator implements Runnable {
             }
 
             int destination = nextRequest.getDestinationFloor();
-            System.out.println("Elevator " + id + " moving from floor " + currentFloor + " to " + destination);
+            if (Main.verboseLogging) {
+                System.out.println("[ELEVATOR " + id + "] Moving from floor " + currentFloor + " to " + destination);
+            }
             moveToFloor(destination);
-            System.out.println("Elevator " + id + " arrived at floor " + destination);
+            if (Main.verboseLogging) {
+                System.out.println("[ELEVATOR " + id + "] Arrived at floor " + destination);
+            }
 
             synchronized (this) {
                 removeRequest(nextRequest);
+            }
+
+            maybeGenerateInternalRequests();
+        }
+
+        System.out.println("[ELEVATOR " + id + "] Shutting down.");
+    }
+
+    public synchronized void shutdown() {
+        running = false;
+        notifyAll();
+    }
+
+    private void maybeGenerateInternalRequests() {
+        if (random.nextInt(100) < Config.getInternalRequestChancePercent()) {
+            int min = Config.getInternalRequestMinCount();
+            int max = Config.getInternalRequestMaxCount();
+            int count = min + random.nextInt(max - min + 1);
+            for (int i = 0; i < count; i++) {
+                int destination;
+                do {
+                    destination = 1 + random.nextInt(Config.getTotalFloors());
+                } while (destination == currentFloor);
+
+                try {
+                    InternalRequest req = new InternalRequest(currentFloor, destination);
+                    addInternalRequest(req);
+                    if (Main.verboseLogging) {
+                        System.out.println("[ELEVATOR " + id + "] Internal request to floor " + destination);
+                    }
+                } catch (IllegalArgumentException e) {
+                    if (Main.verboseLogging) {
+                        System.err.println("[ELEVATOR " + id + "] Failed to generate internal request: " + e.getMessage());
+                    }
+                }
             }
         }
     }
 
     public synchronized void addInternalRequest(InternalRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Request cannot be null");
+        }
+        
         int destination = request.getDestinationFloor();
         if (destination > currentFloor) {
             upRequests.add(request);
         } else if (destination < currentFloor) {
             downRequests.add(request);
-        } else {
-            // Already at destination
-            System.out.println("Elevator " + id + " already at floor " + destination);
         }
 
-        // Optionally notify if elevator is waiting
+        allInternalRequests.add(request);
+
+        if (Main.verboseLogging) {
+            System.out.println("[ELEVATOR " + id + "] Added internal request to floor " + destination);
+        }
+
         notifyAll();
     }
 
@@ -106,34 +158,41 @@ public class Elevator implements Runnable {
             }
 
             try {
-                Thread.sleep(200); // Simulate travel time
+                Thread.sleep(Config.getElevatorMoveIntervalMs());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
 
-            System.out.println("Elevator " + id + " at floor " + currentFloor);
+            if (Main.verboseLogging) {
+                System.out.println("[ELEVATOR " + id + "] At floor " + currentFloor);
+            }
         }
     }
 
-    public synchronized int getCurrentFloor() {
-        return currentFloor;
-    }
-
-    public synchronized ElevatorState getState() {
-        return state;
-    }
-
     public synchronized boolean canAcceptRequest(ExternalRequest request) {
+        if (request == null) {
+            return false;
+        }
+        
         int source = request.getSourceFloor();
         RequestDirection direction = request.getDirection();
 
-        boolean goingSameWay =
-                (state == ElevatorState.UP && direction == RequestDirection.UP && source >= currentFloor) ||
-                        (state == ElevatorState.DOWN && direction == RequestDirection.DOWN && source <= currentFloor);
-
-        boolean isIdle = (state == ElevatorState.IDLE);
-
-        return goingSameWay || isIdle;
+        return (state == ElevatorState.UP && direction == RequestDirection.UP && source >= currentFloor)
+                || (state == ElevatorState.DOWN && direction == RequestDirection.DOWN && source <= currentFloor)
+                || state == ElevatorState.IDLE;
     }
 
+    // Getters for summary
+
+    public int getId() {
+        return id;
+    }
+
+    public int getCurrentFloor() {
+        return currentFloor;
+    }
+
+    public List<InternalRequest> getAllInternalRequests() {
+        return new ArrayList<>(allInternalRequests);
+    }
 }
