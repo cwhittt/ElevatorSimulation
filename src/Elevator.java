@@ -1,7 +1,7 @@
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Elevator implements Runnable {
+public class Elevator implements IElevator {
     private final int id;
     private ElevatorState state;
     private int currentFloor;
@@ -10,22 +10,25 @@ public class Elevator implements Runnable {
     private final TreeSet<InternalRequest> upRequests;
     private final TreeSet<InternalRequest> downRequests;
     private final Random random = new Random();
-
-    // Track all internal requests assigned to this elevator (thread-safe)
     private final List<InternalRequest> allInternalRequests = new CopyOnWriteArrayList<>();
+    private final IPathTracker pathTracker;
 
     public Elevator(int id) {
+        this(id, new PathTracker());
+    }
+
+    public Elevator(int id, IPathTracker pathTracker) {
         this.id = id;
         this.state = ElevatorState.IDLE;
         this.currentFloor = 1;
-
+        this.pathTracker = pathTracker;
         this.upRequests = new TreeSet<>(Comparator.comparingInt(InternalRequest::getDestinationFloor));
         this.downRequests = new TreeSet<>((r1, r2) -> Integer.compare(r2.getDestinationFloor(), r1.getDestinationFloor()));
     }
 
     @Override
     public void run() {
-        while (running) {
+        while (true) {
             InternalRequest nextRequest;
 
             synchronized (this) {
@@ -34,6 +37,7 @@ public class Elevator implements Runnable {
                     state = ElevatorState.IDLE;
                     try {
                         wait(Config.getExternalRequestIntervalMs());
+                        if (!running) break; // Exit if shutdown was called
                         continue;
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -41,6 +45,7 @@ public class Elevator implements Runnable {
                     }
                 }
             }
+            if (!running) break; // Exit if shutdown was called
 
             int destination = nextRequest.getDestinationFloor();
             if (Main.verboseLogging) {
@@ -97,7 +102,14 @@ public class Elevator implements Runnable {
             throw new IllegalArgumentException("Request cannot be null");
         }
         
+        int source = request.getSourceFloor();
         int destination = request.getDestinationFloor();
+        // If the elevator is not already at the source, add the source to the path
+        if (currentFloor != source) {
+            pathTracker.addStep(source);
+        }
+        pathTracker.addStep(destination); // Add destination to the path
+
         if (destination > currentFloor) {
             upRequests.add(request);
         } else if (destination < currentFloor) {
@@ -107,7 +119,7 @@ public class Elevator implements Runnable {
         allInternalRequests.add(request);
 
         if (Main.verboseLogging) {
-            System.out.println("[ELEVATOR " + id + "] Added internal request to floor " + destination);
+            System.out.println("[ELEVATOR " + id + "] Added internal request from floor " + source + " to floor " + destination);
         }
 
         notifyAll();
@@ -191,6 +203,10 @@ public class Elevator implements Runnable {
     }
 
     public List<InternalRequest> getAllInternalRequests() {
-        return new ArrayList<>(allInternalRequests);
+        return allInternalRequests;
+    }
+
+    public List<Integer> getPath() {
+        return pathTracker.getPath();
     }
 }

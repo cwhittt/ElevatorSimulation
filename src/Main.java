@@ -8,6 +8,7 @@ public class Main {
 
     public static void main(String[] args) {
         System.out.println("Elevator simulation starting...");
+        System.out.flush();
 
         int totalFloors = Config.getTotalFloors();
         int numElevators = Config.getNumElevators();
@@ -26,63 +27,59 @@ public class Main {
             return;
         }
 
-        Thread generatorThread = getThread(numRequests);
-
-        generatorThread.start();
-    }
-
-    private static Thread getThread(int numRequests) {
         ExternalRequestGenerator generator = new ExternalRequestGenerator();
+
+        // To use a different strategy, pass it to ElevatorScheduler:
+        // ElevatorScheduler scheduler = new ElevatorScheduler(new RandomSchedulingStrategy());
         ElevatorScheduler scheduler = new ElevatorScheduler();
 
-        return new Thread(() -> {
-            for (int i = 0; i < numRequests; i++) {
-                ExternalRequest req = generator.generateRequest();
-                allExternalRequests.add(req);
-
-                if (verboseLogging) {
-                    System.out.println("[EXTERNAL] Floor: " + req.getSourceFloor() + " | Direction: " + req.getDirection());
-                }
-
-                scheduler.addExternalRequest(req);
-
-                try {
-                    Thread.sleep(Config.getExternalRequestIntervalMs());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+        for (int i = 0; i < numRequests; i++) {
+            ExternalRequest req = generator.generateRequest();
+            allExternalRequests.add(req);
+            if (verboseLogging) {
+                System.out.println("[EXTERNAL] Floor: " + req.getSourceFloor() + " | Direction: " + req.getDirection());
+                System.out.flush();
             }
+            scheduler.addExternalRequest(req);
+            try {
+                Thread.sleep(Config.getExternalRequestIntervalMs());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
 
-            System.out.println("All external requests generated. Simulation continues...");
-            scheduler.shutdownAll();
-
-            printSummary(scheduler);
-        });
+        System.out.println("All external requests generated. Simulation continues...");
+        scheduler.shutdownAll();
+        printSummary(scheduler);
     }
 
     private static void printSummary(ElevatorScheduler scheduler) {
-        System.out.println("\n===== SIMULATION SUMMARY =====\n");
+        System.out.println("\n===== Elevator Paths =====\n");
+        System.out.flush();
 
-        System.out.println("All External Requests:");
-        for (ExternalRequest req : Main.allExternalRequests) {
-            System.out.println("  Floor: " + req.getSourceFloor() + " | Direction: " + req.getDirection());
-        }
-
-        System.out.println();
-
-        for (Elevator elevator : scheduler.getElevators()) {
-            System.out.println("Elevator " + elevator.getId() + " Internal Requests:");
-            List<InternalRequest> internalRequests = elevator.getAllInternalRequests();
-            if (internalRequests.isEmpty()) {
-                System.out.println("  (none)");
+        for (IElevator elevator : scheduler.getElevators()) {
+            List<Integer> path = elevator.getPath();
+            System.out.print("Elevator " + elevator.getId() + " Path: ");
+            if (path.isEmpty()) {
+                System.out.println("(none)");
             } else {
-                for (InternalRequest ir : internalRequests) {
-                    System.out.println("  From floor " + ir.getSourceFloor() + " to floor " + ir.getDestinationFloor());
+                String pathStr = String.join("->", path.stream().map(String::valueOf).toArray(String[]::new));
+                int lineLength = ("Elevator " + elevator.getId() + " Path: ").length();
+                int idx = 0;
+                while (idx < pathStr.length()) {
+                    int remaining = pathStr.length() - idx;
+                    int toPrint = Math.min(80 - lineLength, remaining);
+                    System.out.print(pathStr.substring(idx, idx + toPrint));
+                    idx += toPrint;
+                    if (idx < pathStr.length()) {
+                        System.out.println();
+                        System.out.print("    ");
+                        lineLength = 4;
+                    }
                 }
+                System.out.println();
             }
             System.out.println();
         }
-
-        System.out.println("===== END OF SUMMARY =====");
     }
 }

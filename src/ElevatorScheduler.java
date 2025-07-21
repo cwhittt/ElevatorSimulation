@@ -3,15 +3,21 @@ import java.util.List;
 import java.util.Random;
 
 public class ElevatorScheduler {
-    private final List<Elevator> elevators;
+    private final List<IElevator> elevators;
     private final List<Thread> elevatorThreads = new ArrayList<>();
     private final Random random = new Random();
+    private final SchedulingStrategy schedulingStrategy;
 
     public ElevatorScheduler() {
+        this(new ProximitySchedulingStrategy());
+    }
+
+    public ElevatorScheduler(SchedulingStrategy schedulingStrategy) {
+        this.schedulingStrategy = schedulingStrategy;
         int numElevators = Config.getNumElevators();
         elevators = new ArrayList<>();
         for (int i = 0; i < numElevators; i++) {
-            Elevator elevator = new Elevator(i + 1);
+            IElevator elevator = new Elevator(i + 1, new PathTracker());
             elevators.add(elevator);
             Thread t = new Thread(elevator);
             t.start();
@@ -25,29 +31,19 @@ public class ElevatorScheduler {
             return;
         }
         
-        // Assign external request to the best elevator if possible
-        Elevator bestElevator = null;
-        int bestDistance = Integer.MAX_VALUE;
-
-        for (Elevator elevator : elevators) {
-            if (elevator.canAcceptRequest(request)) {
-                int distance = Math.abs(elevator.getCurrentFloor() - request.getSourceFloor());
-                if (distance < bestDistance) {
-                    bestDistance = distance;
-                    bestElevator = elevator;
-                }
-            }
-        }
-
-        if (bestElevator != null) {
+        // Assign external request using the scheduling strategy
+        IElevator selectedElevator = schedulingStrategy.selectElevator(elevators, request);
+        if (selectedElevator != null) {
+            System.out.println("[Scheduler] Assigned external request at floor " + request.getSourceFloor() + " to Elevator " + selectedElevator.getId());
             try {
-                bestElevator.addInternalRequest(new InternalRequest(request.getSourceFloor(), getRandomFloor(request.getSourceFloor())));
+                selectedElevator.addInternalRequest(new InternalRequest(request.getSourceFloor(), getRandomFloor(request.getSourceFloor())));
             } catch (IllegalArgumentException e) {
                 System.err.println("Warning: Failed to create internal request: " + e.getMessage());
             }
         } else {
             // Fallback: assign to a random elevator
-            Elevator fallback = elevators.get(random.nextInt(elevators.size()));
+            IElevator fallback = elevators.get(random.nextInt(elevators.size()));
+            System.out.println("[Scheduler] Assigned external request at floor " + request.getSourceFloor() + " to Elevator " + fallback.getId() + " (fallback)");
             try {
                 fallback.addInternalRequest(new InternalRequest(request.getSourceFloor(), getRandomFloor(request.getSourceFloor())));
             } catch (IllegalArgumentException e) {
@@ -69,7 +65,7 @@ public class ElevatorScheduler {
     }
 
     public void shutdownAll() {
-        for (Elevator elevator : elevators) {
+        for (IElevator elevator : elevators) {
             elevator.shutdown();
         }
 
@@ -82,9 +78,10 @@ public class ElevatorScheduler {
         }
 
         System.out.println("Simulation complete. All elevators stopped.");
+        System.out.flush();
     }
 
-    public List<Elevator> getElevators() {
+    public List<IElevator> getElevators() {
         return elevators;
     }
 }

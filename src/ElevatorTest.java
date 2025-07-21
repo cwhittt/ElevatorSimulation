@@ -7,27 +7,20 @@ public class ElevatorTest {
 
     public static void main(String[] args) {
         System.out.println("Starting Elevator Simulation Tests...\n");
-        
-        // Test Request
+        // Run Tests
         testExternalRequest();
         testInternalRequest();
         testRequestValidation();
-        
-        // Test Elevator
         testElevatorCreation();
         testElevatorRequestHandling();
         testElevatorStateTransitions();
         testElevatorMovement();
-        
-        // Test Scheduler
+        testElevatorDependencyInjection();
         testSchedulerCreation();
         testSchedulerRequestAssignment();
-        
-        // Test Request Generators
+        testSchedulerWithCustomStrategy();
         testExternalRequestGenerator();
         testInternalRequestGenerator();
-        
-        // Test Configuration
         testConfiguration();
         
         printResults();
@@ -71,7 +64,7 @@ public class ElevatorTest {
 
     private static void testElevatorCreation() {
         test("Elevator creation and initial state", () -> {
-            Elevator elevator = new Elevator(1);
+            IElevator elevator = new Elevator(1);
             assertEqual(elevator.getId(), 1, "Elevator ID should be 1");
             assertEqual(elevator.getCurrentFloor(), 1, "Initial floor should be 1");
             assertEqual(elevator.getAllInternalRequests().size(), 0, "Should start with no requests");
@@ -80,7 +73,7 @@ public class ElevatorTest {
 
     private static void testElevatorRequestHandling() {
         test("Elevator request handling", () -> {
-            Elevator elevator = new Elevator(1);
+            IElevator elevator = new Elevator(1);
             
             // Add up request
             InternalRequest upReq = new InternalRequest(1, 5);
@@ -92,14 +85,13 @@ public class ElevatorTest {
             // Add down request
             InternalRequest downReq = new InternalRequest(5, 2);
             elevator.addInternalRequest(downReq);
-            requests = elevator.getAllInternalRequests();
             assertEqual(requests.size(), 2, "Should have 2 requests");
         });
     }
 
     private static void testElevatorStateTransitions() {
         test("Elevator state transitions", () -> {
-            Elevator elevator = new Elevator(1);
+            IElevator elevator = new Elevator(1);
             
             // Test canAcceptRequest for IDLE state
             ExternalRequest upRequest = new ExternalRequest(3, RequestDirection.UP);
@@ -113,12 +105,36 @@ public class ElevatorTest {
     private static void testElevatorMovement() {
         test("Elevator movement simulation", () -> {
             // This is a basic test - real movement involves threading
-            Elevator elevator = new Elevator(1);
+            IElevator elevator = new Elevator(1);
             assertEqual(elevator.getCurrentFloor(), 1, "Should start at floor 1");
             
             // Test that elevator can be shut down
             elevator.shutdown();
             // No assertion needed - just checking no exception is thrown
+        });
+    }
+
+    private static void testElevatorDependencyInjection() {
+        test("Elevator dependency injection with custom PathTracker", () -> {
+            IPathTracker testTracker = new PathTracker();
+            IElevator elevator = new Elevator(1, testTracker);
+            InternalRequest req1 = new InternalRequest(1, 5);
+            InternalRequest req2 = new InternalRequest(5, 8);
+            elevator.addInternalRequest(req1);
+            elevator.addInternalRequest(req2);
+            List<Integer> path = testTracker.getPath();
+            assertTrue(path.getFirst() == 1, "Path should start with 1");
+            assertTrue(path.contains(5) && path.contains(8), "Path should contain all destinations");
+        });
+    }
+
+    private static void testSchedulerWithCustomStrategy() {
+        test("ElevatorScheduler with RandomSchedulingStrategy", () -> {
+            ElevatorScheduler scheduler = new ElevatorScheduler(new RandomSchedulingStrategy());
+            ExternalRequest request = new ExternalRequest(3, RequestDirection.UP);
+            // Should not throw exception
+            scheduler.addExternalRequest(request);
+            scheduler.shutdownAll();
         });
     }
 
@@ -128,7 +144,7 @@ public class ElevatorTest {
             setTestConfig();
             
             ElevatorScheduler scheduler = new ElevatorScheduler();
-            List<Elevator> elevators = scheduler.getElevators();
+            List<IElevator> elevators = scheduler.getElevators();
             assertEqual(elevators.size(), 2, "Should create 2 elevators");
             assertEqual(elevators.get(0).getId(), 1, "First elevator should have ID 1");
             assertEqual(elevators.get(1).getId(), 2, "Second elevator should have ID 2");
@@ -241,8 +257,7 @@ public class ElevatorTest {
     }
 
     private static void printResults() {
-        System.out.println("TEST RESULTS");
-        System.out.println("=".repeat(10));
+        System.out.println("\n===== Test Results =====\n");
         System.out.println("Score: " + passedTests + "/" + testCount);
     }
 } 

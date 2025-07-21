@@ -10,13 +10,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68ee40cf-27b6-4441-a1c2-1df7cc9b5abb" name="Changes" comment="Elevator Sim">
+      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/project.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Config.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Config.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Elevator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Elevator.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/ElevatorScheduler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/ElevatorScheduler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/ElevatorTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/ElevatorTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/InternalRequestGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/InternalRequestGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ExternalRequestGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/ExternalRequestGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
