@@ -9,7 +9,7 @@ This project simulates an elevator system using Java.
 ## Testing
 
 ### Run Tests in Docker
-`docker-compose --profile test up`
+`docker-compose --profile test up --build`
 
 ## How to Run with Docker
 
