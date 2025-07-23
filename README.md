@@ -21,7 +21,7 @@ Make sure you have [Docker](https://www.docker.com/products/docker-desktop) inst
 ### Available Simulations
 - **Basic** (50 floors, 2 elevators): `docker-compose --profile basic up --build`
 - **Scaled** (100 floors, 4 elevators): `docker-compose --profile scaled up --build`  
-- **Burj** (163 floors, 8 elevators): `docker-compose --profile burj  --build`
+- **Burj** (163 floors, 8 elevators): `docker-compose --profile burj up --build`
 - **Test** (run unit tests): `docker-compose --profile test up --build`
 
 ### Stop Simulation
